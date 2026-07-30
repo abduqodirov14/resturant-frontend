@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Order, OrderStatus } from '../../types';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { ArrowLeft, CheckCircle, ChefHat, Clock, Flame } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ChefHat, Clock, Flame, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { AnimatePresence, motion } from 'motion/react';
-import { api, DEFAULT_FOOD_IMAGE } from '../lib/api';
+import { api, createWebSocket, DEFAULT_FOOD_IMAGE } from '../lib/api';
 import { resolveImageUrl } from '../lib/image';
 import React from 'react';
 
@@ -30,6 +30,10 @@ export function ChefPanel({ onBack }: { onBack?: () => void }) {
     ready: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
   const mapOrders = (rawOrders: any[]): Order[] =>
     rawOrders.map((order: any) => ({
@@ -55,7 +59,7 @@ export function ChefPanel({ onBack }: { onBack?: () => void }) {
       })),
     }));
 
-  const loadOrders = async (status: ChefOrderStatus, silent = false) => {
+  const loadOrders = useCallback(async (status: ChefOrderStatus, silent = false) => {
     try {
       if (!silent) setIsLoading(true);
 
@@ -71,23 +75,70 @@ export function ChefPanel({ onBack }: { onBack?: () => void }) {
       });
       setOrders(mapOrders(ordersRes.orders || []));
     } catch (error: any) {
-      toast.error(error.message || "Buyurtmalarni yuklab bo'lmadi");
+      if (!silent) toast.error(error.message || "Buyurtmalarni yuklab bo'lmadi");
     } finally {
       if (!silent) setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadOrders(activeTab);
   }, [activeTab]);
 
+  // WebSocket connection for real-time updates
   useEffect(() => {
-    const timer = setInterval(() => {
-      loadOrders(activeTab, true);
-    }, 4000);
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let fallbackTimer: ReturnType<typeof setInterval>;
 
-    return () => clearInterval(timer);
-  }, [activeTab]);
+    const connect = () => {
+      const ws = createWebSocket("chef-room");
+      if (!ws) {
+        // Fallback to polling if WebSocket not available
+        fallbackTimer = setInterval(() => loadOrders(activeTabRef.current, true), 15000);
+        return;
+      }
+
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setWsConnected(true);
+        console.log("Chef WebSocket connected");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const { event: wsEvent } = JSON.parse(event.data);
+          if (wsEvent === "new_order" || wsEvent === "order_status_updated") {
+            loadOrders(activeTabRef.current, true);
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        setWsConnected(false);
+        // Reconnect after 3 seconds
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    };
+
+    connect();
+
+    // Fallback polling every 15s (in case WebSocket misses something)
+    fallbackTimer = setInterval(() => loadOrders(activeTabRef.current, true), 15000);
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      clearInterval(fallbackTimer);
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
+    };
+  }, [loadOrders]);
 
   const handleStatusChange = async (orderId: number, newStatus: ChefOrderStatus) => {
     try {
@@ -147,7 +198,13 @@ export function ChefPanel({ onBack }: { onBack?: () => void }) {
                 <h1 className="text-2xl font-bold text-slate-900">
                   Oshpaz Paneli
                 </h1>
-                <p className="text-slate-500 text-sm mt-0.5">Buyurtmalar real backend orqali yangilanadi</p>
+                <p className="text-slate-500 text-sm mt-0.5 flex items-center gap-1.5">
+                  {wsConnected ? (
+                    <><Wifi className="w-3.5 h-3.5 text-green-500" /> Real-time ulangan</>
+                  ) : (
+                    <><WifiOff className="w-3.5 h-3.5 text-slate-400" /> Polling rejimida</>
+                  )}
+                </p>
               </div>
             </div>
 

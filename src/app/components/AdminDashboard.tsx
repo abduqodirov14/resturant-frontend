@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChefHat,
   LayoutDashboard,
@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { DayClose, Expense, Food, Order, Table } from "../../types";
 import { getTodayDayKey } from "../lib/admin";
-import { api, DEFAULT_FOOD_IMAGE } from "../lib/api";
+import { api, createWebSocket, DEFAULT_FOOD_IMAGE } from "../lib/api";
 import { resolveImageUrl } from "../lib/image";
 import { AdminAnalytics } from "./admin/AdminAnalytics";
 import { AdminFinance } from "./admin/AdminFinance";
@@ -156,16 +156,44 @@ export function AdminDashboard({ onBack }: { onBack?: () => void }) {
     loadAll();
   }, []);
 
+  // WebSocket connection for real-time admin updates
   useEffect(() => {
-    if (activeTab !== "orders") return;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let fallbackTimer: ReturnType<typeof setInterval>;
 
-    loadOrdersSnapshot();
-    const timer = setInterval(() => {
-      loadOrdersSnapshot();
-    }, 20000);
+    const connect = () => {
+      const ws = createWebSocket("admin-room");
+      if (!ws) {
+        fallbackTimer = setInterval(loadOrdersSnapshot, 30000);
+        return;
+      }
 
-    return () => clearInterval(timer);
-  }, [activeTab]);
+      ws.onopen = () => console.log("Admin WebSocket connected");
+
+      ws.onmessage = (event) => {
+        try {
+          const { event: wsEvent } = JSON.parse(event.data);
+          if (wsEvent === "new_order" || wsEvent === "order_status_updated" || wsEvent === "order_paid") {
+            loadOrdersSnapshot();
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => ws.close();
+    };
+
+    connect();
+    fallbackTimer = setInterval(loadOrdersSnapshot, 30000);
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      clearInterval(fallbackTimer);
+    };
+  }, []);
 
   const todayOrdersCount = useMemo(() => {
     const today = new Date().toDateString();

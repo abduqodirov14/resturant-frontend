@@ -5,6 +5,11 @@ const rawApiUrl =
   "/api";
 const API_URL = String(rawApiUrl).replace(/\/$/, "");
 
+// Export backend origin for image resolution and WebSocket connections
+export const BACKEND_ORIGIN = API_URL.endsWith("/api")
+  ? API_URL.slice(0, -4)
+  : API_URL.replace(/\/api$/, "");
+
 export const DEFAULT_FOOD_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2080&auto=format&fit=crop";
 
@@ -65,6 +70,28 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   return parsed as unknown as T;
+}
+
+// WebSocket connection helper
+export function createWebSocket(room: "chef-room" | "admin-room"): WebSocket | null {
+  try {
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    let wsUrl: string;
+
+    if (BACKEND_ORIGIN && !BACKEND_ORIGIN.startsWith("/")) {
+      // Production: use backend origin
+      const backendHost = BACKEND_ORIGIN.replace(/^https?:\/\//, "");
+      wsUrl = `${wsProtocol}//${backendHost}/ws?room=${room}`;
+    } else {
+      // Development: use same host (Vite proxy will handle it)
+      wsUrl = `${wsProtocol}//${window.location.host}/ws?room=${room}`;
+    }
+
+    return new WebSocket(wsUrl);
+  } catch (error) {
+    console.error("WebSocket connection failed:", error);
+    return null;
+  }
 }
 
 export const api = {

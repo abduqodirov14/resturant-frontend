@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#ea580c"/>
+  <g transform="translate(256,256)">
+    <!-- Plate circle -->
+    <circle cx="0" cy="10" r="140" fill="none" stroke="white" stroke-width="12" opacity="0.9"/>
+    <circle cx="0" cy="10" r="110" fill="none" stroke="white" stroke-width="4" opacity="0.4"/>
+    <!-- Fork -->
+    <g transform="translate(-50,-40) rotate(-15, 50, 100)">
+      <rect x="46" y="20" width="8" height="120" rx="4" fill="white"/>
+      <rect x="32" y="0" width="6" height="50" rx="3" fill="white"/>
+      <rect x="42" y="0" width="6" height="50" rx="3" fill="white"/>
+      <rect x="52" y="0" width="6" height="50" rx="3" fill="white"/>
+      <rect x="62" y="0" width="6" height="50" rx="3" fill="white"/>
+    </g>
+    <!-- Knife -->
+    <g transform="translate(20,-40) rotate(15, 30, 100)">
+      <rect x="26" y="50" width="8" height="90" rx="4" fill="white"/>
+      <path d="M26,50 Q20,-10 30,-20 Q40,-10 34,50 Z" fill="white"/>
+    </g>
+  </g>
+  <!-- QR badge -->
+  <g transform="translate(370, 370)">
+    <rect x="0" y="0" width="100" height="100" rx="20" fill="white"/>
+    <rect x="15" y="15" width="25" height="25" rx="4" fill="#ea580c"/>
+    <rect x="60" y="15" width="25" height="25" rx="4" fill="#ea580c"/>
+    <rect x="15" y="60" width="25" height="25" rx="4" fill="#ea580c"/>
+    <rect x="55" y="55" width="12" height="12" rx="2" fill="#ea580c"/>
+    <rect x="72" y="55" width="12" height="12" rx="2" fill="#ea580c"/>
+    <rect x="55" y="72" width="12" height="12" rx="2" fill="#ea580c"/>
+    <rect x="72" y="72" width="12" height="12" rx="2" fill="#ea580c"/>
+  </g>
+</svg>

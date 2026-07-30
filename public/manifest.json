@@ -1,0 +1,27 @@
+{
+  "name": "QR Menu - Restoran Buyurtma Tizimi",
+  "short_name": "QR Menu",
+  "description": "QR kod orqali restoran menyu va buyurtma tizimi",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#ea580c",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["food", "business"],
+  "lang": "uz"
+}

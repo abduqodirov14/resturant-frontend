@@ -1,15 +1,34 @@
 
   <!DOCTYPE html>
-  <html lang="en">
+  <html lang="uz">
     <head>
       <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>QR Menu System</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+      <!-- SEO -->
+      <title>QR Menu - Restoran Buyurtma Tizimi</title>
+      <meta name="description" content="QR kod orqali restoran menyu va buyurtma tizimi. Mijozlar, oshpaz va admin uchun qulay panel." />
+      <meta name="theme-color" content="#ea580c" />
+
+      <!-- PWA -->
+      <link rel="manifest" href="/manifest.json" />
+      <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      <meta name="apple-mobile-web-app-title" content="QR Menu" />
+      <meta name="mobile-web-app-capable" content="yes" />
     </head>
 
     <body>
       <div id="root"></div>
       <script type="module" src="/src/main.tsx"></script>
+      <script>
+        // Register service worker for PWA
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+          });
+        }
+      </script>
     </body>
   </html>
-  

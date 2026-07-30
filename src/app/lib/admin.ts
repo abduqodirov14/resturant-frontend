@@ -47,26 +47,34 @@ export const getOrderStatusClass = (status: OrderStatus) => {
   }
 };
 
-const formatReceiptNo = (orderId: number, paidAt: Date) => {
-  const yyyy = paidAt.getFullYear();
-  const mm = String(paidAt.getMonth() + 1).padStart(2, "0");
-  const dd = String(paidAt.getDate()).padStart(2, "0");
+const formatReceiptNo = (orderId: number, paidAt: Date | string) => {
+  const date = paidAt instanceof Date ? paidAt : new Date(paidAt);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}${mm}${dd}-${String(orderId).padStart(5, "0")}`;
 };
 
 export const buildReceiptFromOrder = (order: Order): ReceiptData => {
   const paidAt = order.paidAt || order.updatedAt;
 
+  // Safely convert to ISO string — handle both Date objects and string values from API
+  const toISO = (val: Date | string | null | undefined): string => {
+    if (!val) return new Date().toISOString();
+    if (val instanceof Date) return val.toISOString();
+    return new Date(val).toISOString();
+  };
+
   return {
     receiptNo: formatReceiptNo(order.id, paidAt),
     orderId: order.id,
     tableNumber: Number(order.table?.number || order.tableId),
-    issuedAt: order.createdAt.toISOString(),
-    paidAt: paidAt.toISOString(),
-    total: Number(order.totalPrice || 0),
+    issuedAt: toISO(order.createdAt),
+    paidAt: toISO(paidAt),
+    total: Number((order as any).totalPrice || (order as any).total || 0),
     lines: order.items.map((item) => ({
       foodId: item.foodId,
-      name: item.food.nameUz || item.food.name,
+      name: (item.food as any).nameUz || item.food.name,
       quantity: Number(item.quantity || 0),
       unitPrice: Number(item.unitPrice || item.price || 0),
       lineTotal: Number(item.lineTotal || item.price * item.quantity || 0),
